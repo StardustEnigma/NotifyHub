@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: NotifyHub
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notifyhub
+    username: postgres
+    password: atharva@2004
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.notifyhub: DEBUG
+    org.springframework.web.socket: INFO
