@@ -14,6 +14,7 @@
     // ───── DOM References ─────
     const currentUserSelect = document.getElementById('currentUser');
     const connectionStatus = document.getElementById('connectionStatus');
+    const connectionStatusMobile = document.getElementById('connectionStatusMobile');
     const statusText = connectionStatus.querySelector('.status-text');
 
     const notificationForm = document.getElementById('notificationForm');
@@ -27,14 +28,60 @@
     const unreadBadge = document.getElementById('unreadBadge');
     const btnRefresh = document.getElementById('btnRefresh');
     const btnMarkAllRead = document.getElementById('btnMarkAllRead');
-    const filterButtons = document.querySelectorAll('.btn-filter');
+    const filterButtons = document.querySelectorAll('.pill');
     const toastContainer = document.getElementById('toastContainer');
+
+    const userAvatarDisplay = document.getElementById('userAvatarDisplay');
+
+    // Sidebar mobile toggle
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const btnMenuToggle = document.getElementById('btnMenuToggle');
 
     // ───── State ─────
     let stompClient = null;
     let currentSubscription = null;
     let currentFilter = 'all';
     let notifications = [];
+
+    // ───── Sidebar Toggle (Mobile) ─────
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    if (btnMenuToggle) {
+        btnMenuToggle.addEventListener('click', function () {
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // ───── User Avatar ─────
+
+    function updateAvatar() {
+        if (userAvatarDisplay) {
+            const name = currentUserSelect.value;
+            userAvatarDisplay.textContent = name.charAt(0).toUpperCase();
+        }
+    }
+
+    updateAvatar();
 
     // ───── WebSocket ─────
 
@@ -83,8 +130,14 @@
     }
 
     function setConnectionStatus(status, text) {
-        connectionStatus.className = 'connection-status ' + status;
+        connectionStatus.className = 'connection-indicator ' + status;
         statusText.textContent = text;
+        connectionStatus.title = text;
+
+        // Also update mobile status indicator
+        if (connectionStatusMobile) {
+            connectionStatusMobile.className = 'connection-indicator mobile-status ' + status;
+        }
     }
 
     // ───── REST API ─────
@@ -132,6 +185,8 @@
                     message: 'Notification delivered to ' + payload.recipientId,
                     type: 'SUCCESS'
                 });
+                // Close sidebar on mobile after sending
+                closeSidebar();
             } else {
                 showToast({
                     title: 'Error',
@@ -233,12 +288,14 @@
         const div = document.createElement('div');
         div.className = 'empty-state';
         div.innerHTML =
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">' +
-                '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
-                '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
-            '</svg>' +
-            '<p>No notifications yet</p>' +
-            '<span>Send one from the panel on the left!</span>';
+            '<div class="empty-illustration">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+                    '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
+                '</svg>' +
+            '</div>' +
+            '<p class="empty-title">No notifications yet</p>' +
+            '<span class="empty-desc">Compose one from the sidebar to get started.</span>';
         return div;
     }
 
@@ -319,6 +376,7 @@
 
     currentUserSelect.addEventListener('change', function () {
         const userId = this.value;
+        updateAvatar();
         // Re-subscribe to the new user's WebSocket topic
         if (stompClient && stompClient.connected) {
             subscribeToUser(userId);
